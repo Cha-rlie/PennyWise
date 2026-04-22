@@ -45,9 +45,9 @@ class _LoadingPageState extends State<LoadingPage> {
   Widget build(BuildContext context) {
     return Scaffold(backgroundColor: Styles.backgroundColor,
       body: SafeArea(
-        child: Column( crossAxisAlignment: CrossAxisAlignment.center,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Positioned.fill(top: 0, child: Text("Penny Wise", style: Styles.titleFont, textAlign: TextAlign.center)),
+            Expanded(child: Text("Penny Wise", style: Styles.titleFont, textAlign: TextAlign.center)),
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,

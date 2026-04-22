@@ -8,7 +8,7 @@ class ProfilePage extends StatefulWidget {
   State<ProfilePage> createState() => _ProfilePageState();
 
 }
-
+// TODO: add gesture to go back :D
 class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {

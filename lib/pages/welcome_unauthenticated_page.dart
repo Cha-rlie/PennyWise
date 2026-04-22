@@ -25,7 +25,7 @@ class _WelcomeUnauthenticatedPageState extends State<WelcomeUnauthenticatedPage>
           }
         }
       },
-      child:SafeArea(child: Stack(alignment: Alignment.center,
+      child: SafeArea(child: Stack(alignment: Alignment.center,
         children: [
           // Background color split
           SizedBox.expand(

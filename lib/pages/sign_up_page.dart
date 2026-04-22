@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:penny_wise/styles.dart';
@@ -125,24 +126,24 @@ class _SignUpPageState extends State<SignUpPage> {
         email: _emailController.text.trim().toLowerCase(),
         password: _passwordController.text
       );
+      final user = credential.user!;
+      await FirebaseFirestore.instance
+        .collection("users")
+        .doc(user.uid)
+        .set({
+          "email": user.email,
+           // default username is the part of the email before the @
+           //this can be changed in the Profile page after signing up
+          "username": user.email!.split("@")[0],
+          "totalDebt": 0.0,
+          "requireFriendApproval": false,
+          "preferredCurrency": "USD"
+        });
       setState(() => isLoading = false);
       Navigator.popAndPushNamed(context, "/mainApp");
     } on FirebaseAuthException catch (error) {
       setState(() => isLoading = false);
       switch (error.code) {
-        case "invalid-credential":
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Invalid email or password. Please try again.", style: Styles.textFont), showCloseIcon: true, duration: Duration(seconds: 3), backgroundColor: Styles.red, behavior: SnackBarBehavior.floating, margin: EdgeInsets.all(20), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Styles.white, width: 3))));
-          break;
-        // This error code and the one below should not occur due to email enumeration protection set to true for the server, but they are included here should this change to ensure proper error handling
-        case "user-not-found":
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Invalid email or password. Please try again.", style: Styles.textFont), showCloseIcon: true, duration: Duration(seconds: 3), backgroundColor: Styles.red, behavior: SnackBarBehavior.floating, margin: EdgeInsets.all(20), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Styles.white, width: 3))));
-          break;
-        case "wrong-password":
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Invalid email or password. Please try again.", style: Styles.textFont), showCloseIcon: true, duration: Duration(seconds: 3), backgroundColor: Styles.red, behavior: SnackBarBehavior.floating, margin: EdgeInsets.all(20), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Styles.white, width: 3))));
-          break;
-        case "user-disabled":
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("This account has been disabled.", style: Styles.textFont), showCloseIcon: true, duration: Duration(seconds: 3), backgroundColor: Styles.red, behavior: SnackBarBehavior.floating, margin: EdgeInsets.all(20), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Styles.white, width: 3))));
-          break;
         case "invalid-email":
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("The email address is invalid. Please try again.", style: Styles.textFont), showCloseIcon: true, duration: Duration(seconds: 3), backgroundColor: Styles.red, behavior: SnackBarBehavior.floating, margin: EdgeInsets.all(20), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Styles.white, width: 3))));
           break;
@@ -150,11 +151,16 @@ class _SignUpPageState extends State<SignUpPage> {
         case "network-request-failed":
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Network error. Please check your connection and try again.", style: Styles.textFont), showCloseIcon: true, duration: Duration(seconds: 3), backgroundColor: Styles.red, behavior: SnackBarBehavior.floating, margin: EdgeInsets.all(20), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Styles.white, width: 3))));
           break;
+        case "weak-password":
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("The password is too weak. Please choose a stronger password and try again.", style: Styles.textFont), showCloseIcon: true, duration: Duration(seconds: 3), backgroundColor: Styles.red, behavior: SnackBarBehavior.floating, margin: EdgeInsets.all(20), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Styles.white, width: 3))));
+          break;
+        case "email-already-in-use":
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("An account with this email already exists. Please log in or use a different email to sign up.", style: Styles.textFont), showCloseIcon: true, duration: Duration(seconds: 3), backgroundColor: Styles.red, behavior: SnackBarBehavior.floating, margin: EdgeInsets.all(20), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Styles.white, width: 3))));
+          break;
         default:
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("An unexpected error occurred. Please try again later.", style: Styles.textFont), showCloseIcon: true, duration: Duration(seconds: 3), backgroundColor: Styles.red, behavior: SnackBarBehavior.floating, margin: EdgeInsets.all(20), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Styles.white, width: 3))));
           break;
       }
     }
   }
-
 }

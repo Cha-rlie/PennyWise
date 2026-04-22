@@ -1,4 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:penny_wise/styles.dart';
@@ -47,12 +49,11 @@ class _LogInPageState extends State<LogInPage> {
               color: Styles.lighterBackgroundColor,
               colorBlendMode: BlendMode.srcIn,
             )),
-            Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
-              Positioned.fill(top: 0, child: Row(mainAxisSize: MainAxisSize.max, mainAxisAlignment: MainAxisAlignment.start, children: [
+            Positioned(top: 0, left: 0, right: 0, child: Row(mainAxisSize: MainAxisSize.max, mainAxisAlignment: MainAxisAlignment.start, children: [
                 IconButton(onPressed: () {HapticFeedback.lightImpact(); Navigator.pop(context);}, icon: Icon(Icons.keyboard_arrow_left, color: Styles.lighterBackgroundColor, size: 90), style: IconButton.styleFrom(backgroundColor: Styles.backgroundColor),padding: EdgeInsets.symmetric(horizontal: 0, vertical: 0), tooltip: "Back Button"),
                 Expanded(child:Text("Penny Wise", style: Styles.titleFont, textAlign: TextAlign.center)),
                 SizedBox(width: width*0.1),
-              ]))]),
+              ])),
               // Documentation on form: https://api.flutter.dev/flutter/widgets/Form-class.html
             Positioned(top: height * 0.41, child: Container(width: width * 0.8, child: Column(children: [
               Form(key:_formKey, autovalidateMode: AutovalidateMode.onUnfocus, child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -125,6 +126,28 @@ class _LogInPageState extends State<LogInPage> {
         email: _emailController.text.trim().toLowerCase(),
         password: _passwordController.text
       );
+      final user = credential.user!;
+
+      // Check if the logged-in user has been linked to a data Firestore document yet
+      // They should have been linked when signing-up, but this exists as a fail-safe
+      // If their document does not exist, it is created here
+      final snapshot = await FirebaseFirestore.instance.collection("users").doc(user.uid).get();
+      if (!snapshot.exists) {
+        await FirebaseFirestore.instance
+        .collection("users")
+        .doc(user.uid)
+        .set({
+          "email": user.email,
+           // default username is the part of the email before the @
+           //this can be changed in the Profile page after signing up
+          "username": user.email!.split("@")[0],
+          "totalDebt": 0.0,
+          "requireFriendApproval": false,
+          "preferredCurrency": "USD"
+        },
+        SetOptions(merge: true));
+      }
+      if (!mounted) return;
       setState(() => isLoading = false);
       Navigator.popAndPushNamed(context, "/mainApp");
     } on FirebaseAuthException catch (error) {
@@ -154,6 +177,12 @@ class _LogInPageState extends State<LogInPage> {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("An unexpected error occurred. Please try again later.", style: Styles.textFont), showCloseIcon: true, duration: Duration(seconds: 3), backgroundColor: Styles.red, behavior: SnackBarBehavior.floating, margin: EdgeInsets.all(20), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Styles.white, width: 3))));
           break;
       }
+    } catch (e, stackTrace) {
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("An unexpected error occurred. Please try again later.", style: Styles.textFont), showCloseIcon: true, duration: Duration(seconds: 3), backgroundColor: Styles.red, behavior: SnackBarBehavior.floating, margin: EdgeInsets.all(20), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Styles.white, width: 3))));
+      // Log the error and stack trace to the console for debugging
+      debugPrint("Error during login: $e");
+      debugPrint("Stack trace: $stackTrace");
     }
   }
 
