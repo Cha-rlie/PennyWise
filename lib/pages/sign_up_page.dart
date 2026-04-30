@@ -128,17 +128,22 @@ class _SignUpPageState extends State<SignUpPage> {
       );
       final user = credential.user!;
       await FirebaseFirestore.instance
-        .collection("users")
+        .collection("public-users")
         .doc(user.uid)
         .set({
           "email": user.email,
            // default username is the part of the email before the @
            //this can be changed in the Profile page after signing up
           "username": user.email!.split("@")[0],
-          "totalDebt": 0.0,
           "requireFriendApproval": false,
-          "preferredCurrency": "USD"
         });
+      await FirebaseFirestore.instance
+        .collection("private-users")
+        .doc(user.uid)
+        .set({
+          "totalDebt": 0.0,
+          "preferredCurrency": "USD"
+        });  
       setState(() => isLoading = false);
       Navigator.popAndPushNamed(context, "/mainApp");
     } on FirebaseAuthException catch (error) {

@@ -131,18 +131,27 @@ class _LogInPageState extends State<LogInPage> {
       // Check if the logged-in user has been linked to a data Firestore document yet
       // They should have been linked when signing-up, but this exists as a fail-safe
       // If their document does not exist, it is created here
-      final snapshot = await FirebaseFirestore.instance.collection("users").doc(user.uid).get();
-      if (!snapshot.exists) {
+      final publicSnapshot = await FirebaseFirestore.instance.collection("public-users").doc(user.uid).get();
+      if (!publicSnapshot.exists) {
         await FirebaseFirestore.instance
-        .collection("users")
+        .collection("public-users")
         .doc(user.uid)
         .set({
           "email": user.email,
            // default username is the part of the email before the @
            //this can be changed in the Profile page after signing up
           "username": user.email!.split("@")[0],
-          "totalDebt": 0.0,
           "requireFriendApproval": false,
+        },
+        SetOptions(merge: true));
+      }
+      final privateSnapshot = await FirebaseFirestore.instance.collection("private-users").doc(user.uid).get();
+      if (!privateSnapshot.exists) {
+        await FirebaseFirestore.instance
+        .collection("private-users")
+        .doc(user.uid)
+        .set({
+          "totalDebt": 0.0,
           "preferredCurrency": "USD"
         },
         SetOptions(merge: true));
