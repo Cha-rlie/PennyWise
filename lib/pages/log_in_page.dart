@@ -1,8 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:penny_wise/model/reading_streams.dart';
 import 'package:penny_wise/styles.dart';
 
 class LogInPage extends StatefulWidget {
@@ -73,7 +73,7 @@ class _LogInPageState extends State<LogInPage> {
                 decoration: Styles.textFieldDecoration.copyWith(labelText: "Password"),
                 validator: (value) => (value != null && value.trim().isNotEmpty) ? null : "Don't forget to enter your password!",
               ),
-              SizedBox(height: height*0.175),
+              SizedBox(height: height*0.185),
               Stack(alignment: Alignment.center, clipBehavior: Clip.none, children: [
               ElevatedButton(
                   onPressed: () {
@@ -109,10 +109,12 @@ class _LogInPageState extends State<LogInPage> {
                 side: BorderSide(color: Styles.white, width: 3),
                 padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20)
               ),
-              child: Text("Forgot Password? Send Reset Email", style: Styles.textFont)),
-            ]),
-        // TODO: Animation but only when isLoading is true
-        ))]))));
+              child: Text("Forgot Password? Send Reset Email", style: Styles.textFont)
+            ),
+          ]))),
+          // Loading animation but only when isLoading is true
+          if (isLoading) Positioned.fill(child: Container(color: Styles.backgroundColor.withValues(alpha: 0.8), child: Center(child: CircularProgressIndicator(color: Styles.accentColor))))
+        ]))));
       })
       ))
     );
@@ -152,13 +154,16 @@ class _LogInPageState extends State<LogInPage> {
         .doc(user.uid)
         .set({
           "totalDebt": 0.0,
-          "preferredCurrency": "USD"
+          "preferredCurrency": "USD",
+          "automaticallyLogOut": false,
+          "notifications": false,
+          "paymentReminderFrequency": "Never"
         },
         SetOptions(merge: true));
       }
       if (!mounted) return;
       setState(() => isLoading = false);
-      Navigator.popAndPushNamed(context, "/mainApp");
+      ReadingStreams.isPostAuthDataComplete.value = true;
     } on FirebaseAuthException catch (error) {
       setState(() => isLoading = false);
       switch (error.code) {

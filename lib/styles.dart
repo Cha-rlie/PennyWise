@@ -9,6 +9,7 @@ class Styles {
   static const Color red = Color(0xFFA32900); // Rust Brown
   static const Color white = Color(0xFFFFFFFF); // White
   static const Color black = Color(0xFF000000); // Black
+  static const Color grey = Color(0xFFB0B0B0); // Grey
 
   // Text Styles
   static const TextStyle titleFont = TextStyle(
@@ -48,26 +49,45 @@ class Styles {
 
   // Input Decoration Styles
   static InputDecoration textFieldDecoration = InputDecoration(
-                  labelText: "Email",
-                  labelStyle: headingFont,
-                  errorStyle: errorFont,
-                  filled: true,
-                  fillColor: lighterBackgroundColor,
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.white, width: 3)),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.accentColor, width: 3)),
-                  errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.negativeColor, width: 3)),
-                  focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.negativeColor, width: 3))
-                );
+    labelText: "Email",
+    labelStyle: headingFont,
+    errorStyle: errorFont,
+    filled: true,
+    fillColor: lighterBackgroundColor,
+    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.white, width: 3)),
+    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.accentColor, width: 3)),
+    errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.negativeColor, width: 3)),
+    focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.negativeColor, width: 3))
+  );
 
-    static InputDecoration blackTextFieldDecoration = InputDecoration(
-                  labelText: "Email",
-                  labelStyle: headingFont.copyWith(color: black),
-                  errorStyle: errorFont,
-                  filled: true,
-                  fillColor: primaryColor,
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.black, width: 3)),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.accentColor, width: 3)),
-                  errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.negativeColor, width: 3)),
-                  focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.negativeColor, width: 3))
-                );
+  static InputDecoration blackTextFieldDecoration = InputDecoration(
+    labelText: "Email",
+    labelStyle: headingFont.copyWith(color: black),
+    errorStyle: errorFont,
+    filled: true,
+    fillColor: primaryColor,
+    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.black, width: 3)),
+    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.accentColor, width: 3)),
+    errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.negativeColor, width: 3)),
+    focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.negativeColor, width: 3))
+  );
+
+  static InputDecorationTheme dropdownMenuDecorationTheme = InputDecorationTheme(
+    labelStyle: headingFont,
+    helperStyle: textFont.copyWith(color: grey),
+    errorStyle: errorFont,
+    filled: true,
+    fillColor: lighterBackgroundColor,
+    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.white, width: 3)),
+    disabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.grey, width: 3)),
+    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.accentColor, width: 3)),
+    errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.negativeColor, width: 3)),
+    focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.negativeColor, width: 3))
+  );
+
+  static MenuStyle dropdownMenuStyle = MenuStyle(
+    backgroundColor: WidgetStateProperty.fromMap( {
+      WidgetState.any: lighterBackgroundColor,
+    }),
+  );
 }

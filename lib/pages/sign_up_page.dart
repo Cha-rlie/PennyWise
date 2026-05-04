@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:penny_wise/model/reading_streams.dart';
 import 'package:penny_wise/styles.dart';
 
 class SignUpPage extends StatefulWidget {
@@ -111,8 +112,10 @@ class _SignUpPageState extends State<SignUpPage> {
               ]),
             ])),
             ]),
-        // TODO: Animation but only when isLoading is true
-        ))]))));
+        )),
+        // Loading animation but only when isLoading is true
+        if (isLoading) Positioned.fill(child: Container(color: Styles.backgroundColor.withValues(alpha: 0.8), child: Center(child: CircularProgressIndicator(color: Styles.accentColor))))
+        ]))));
       })
       ))
     );
@@ -142,10 +145,13 @@ class _SignUpPageState extends State<SignUpPage> {
         .doc(user.uid)
         .set({
           "totalDebt": 0.0,
-          "preferredCurrency": "USD"
+          "preferredCurrency": "USD",
+          "automaticallyLogOut": false,
+          "notifications": false,
+          "paymentReminderFrequency": "Never"
         });  
       setState(() => isLoading = false);
-      Navigator.popAndPushNamed(context, "/mainApp");
+      ReadingStreams.isPostAuthDataComplete.value = true;
     } on FirebaseAuthException catch (error) {
       setState(() => isLoading = false);
       switch (error.code) {
