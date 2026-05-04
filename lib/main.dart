@@ -219,13 +219,18 @@ class _AppMainShellState extends State<AppMainShell> {
                       ),
                       IgnorePointer(
                         child: Container(
-                          height: 32,
+                          height: 30,
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
+                              // Smooth fade out effect
+                              stops: [0.0, 0.3, 0.6, 0.8, 1.0],
                               colors: [
-                                Styles.backgroundColor.withValues(alpha: 0.5),
+                                Styles.backgroundColor.withValues(alpha: 0.6),
+                                Styles.backgroundColor.withValues(alpha: 0.4),
+                                Styles.backgroundColor.withValues(alpha: 0.2),
+                                Styles.backgroundColor.withValues(alpha: 0.05),
                                 Styles.backgroundColor.withValues(alpha: 0.0)
                               ]
                             )

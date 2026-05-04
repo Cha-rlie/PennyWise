@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:money2/money2.dart';
 import 'package:penny_wise/model/connectivity_util.dart';
+import 'package:penny_wise/model/reading_streams.dart';
 
 import 'package:penny_wise/styles.dart';
 import 'package:penny_wise/model/document_snapshot_wrappers.dart';
@@ -28,25 +29,43 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _notificiationsValue = false;
   bool _notificationsChanged = false;
 
+  bool _areStreamsLoaded = false;
+
   // Preload all currencies
   final List<Currency> _currencies = Currencies().getRegistered().toList();
 
   @override
+  void initState() {
+    super.initState();
+
+    // Get initial values
+    () async {
+      final privateResult = await ReadingStreams.getInstance().privateUserStream.first;
+      final publicResult = await ReadingStreams.getInstance().publicUserStream.first;
+      if (!mounted) return;
+      setState(() {
+        final private = privateResult.data() as Map<String, dynamic>?;
+        final public = publicResult.data() as Map<String, dynamic>?;
+        _defaultCurrencyController.text = (private?["preferredCurrency"] as String?) ?? "USD";
+        _paymentReminderController.text = (private?["paymentReminderFrequency"] as String?) ?? "Never";
+        _requireFriendApprovalValue = public?["requireFriendApproval"] as bool? ?? false;
+        _automaticallyLogOutValue = private?["automaticallyLogOut"] as bool? ?? false;
+        _notificiationsValue = private?["notifications"] as bool? ?? false;
+        _areStreamsLoaded = true;
+      });
+    }();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final privateUser = context.watch<PrivateUser?>();
-    final publicUser = context.watch<PublicUser?>();
     // Wait for the streams to load
-    if (privateUser == null || publicUser == null) {
+    if (!_areStreamsLoaded) {
       return Scaffold(
         backgroundColor: Styles.backgroundColor,
         body: Center(child: CircularProgressIndicator(color: Styles.accentColor)),
       );
     }
-    _defaultCurrencyController.text = privateUser.data["preferredCurrency"] as String? ?? "USD";
-    _paymentReminderController.text = privateUser.data["paymentReminderFrequency"] as String? ?? "Never";
-    _requireFriendApprovalValue = publicUser.data["requireFriendApproval"] as bool? ?? false;
-    _automaticallyLogOutValue = privateUser.data["automaticallyLogOut"] as bool? ?? false;
-    _notificiationsValue = privateUser.data["notifications"] as bool? ?? false;
+    
     return SingleChildScrollView(
       child:Row(
         children: [
@@ -57,7 +76,7 @@ class _SettingsPageState extends State<SettingsPage> {
             mainAxisSize: MainAxisSize.min,
             spacing: 10,
             children: [
-              SizedBox(height: 100), // Top padding
+              SizedBox(height: 90), // Top padding
               Text("Preferences", style: Styles.subTitleFont),
               DropdownMenu(
                 controller: _defaultCurrencyController,
@@ -182,30 +201,42 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
   Future<void> _saveSettings() async {
+    if (!_defaultCurrencyChanged && !_paymentReminderChanged && !_requireFriendApprovalChanged && !_automaticallyLogOutChanged && !_notificationsChanged) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("No changes to save!", style: Styles.textFont), showCloseIcon: true, duration: Duration(seconds: 3), backgroundColor: Styles.grey, behavior: SnackBarBehavior.floating, margin: EdgeInsets.all(20), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Styles.white, width: 3)))
+      );
+      return;
+    }
     if (_defaultCurrencyChanged) {
       await FirebaseFirestore.instance.collection("private-users").doc(FirebaseAuth.instance.currentUser!.uid).update({
         "preferredCurrency": _defaultCurrencyController.text
       });
+      _defaultCurrencyChanged = false;
     }
     if (_paymentReminderChanged) {
       await FirebaseFirestore.instance.collection("private-users").doc(FirebaseAuth.instance.currentUser!.uid).update({
         "paymentReminderFrequency": _paymentReminderController.text
       });
+      _paymentReminderChanged = false;
     }
     if (_requireFriendApprovalChanged) {
       await FirebaseFirestore.instance.collection("public-users").doc(FirebaseAuth.instance.currentUser!.uid).update({
         "requireFriendApproval": _requireFriendApprovalValue
       });
+      _requireFriendApprovalChanged = false;
     }
     if (_automaticallyLogOutChanged) {
       await FirebaseFirestore.instance.collection("private-users").doc(FirebaseAuth.instance.currentUser!.uid).update({
         "automaticallyLogOut": _automaticallyLogOutValue
       });
+      _automaticallyLogOutChanged = false;
     }
      if (_notificationsChanged) {
       await FirebaseFirestore.instance.collection("private-users").doc(FirebaseAuth.instance.currentUser!.uid).update({
         "notifications": _notificiationsValue,
       });
+      _notificationsChanged = false;
     }
     if (await checkInternertConnection() == false) {
       if (!mounted) return;
