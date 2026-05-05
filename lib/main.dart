@@ -140,12 +140,12 @@ class _AppMainShellState extends State<AppMainShell> {
     return GestureDetector(
       onHorizontalDragEnd: (details) {
         if (details.primaryVelocity != null) {
-          if (details.primaryVelocity! < -200) {
+          if (details.primaryVelocity! < -200) { // Swipe right
             HapticFeedback.lightImpact();
             setState(() {
               _selectedPageIndex = min(4, _selectedPageIndex+1);
             });
-          } else if (details.primaryVelocity! > 200) {
+          } else if (details.primaryVelocity! > 200) { // Swipe left
             HapticFeedback.lightImpact();
             setState(() {
               _selectedPageIndex = max(0, _selectedPageIndex-1);
@@ -219,7 +219,7 @@ class _AppMainShellState extends State<AppMainShell> {
                       ),
                       IgnorePointer(
                         child: Container(
-                          height: 30,
+                          height: 20,
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               begin: Alignment.topCenter,

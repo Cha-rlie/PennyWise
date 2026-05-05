@@ -37,35 +37,33 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   void initState() {
     super.initState();
-
-    // Get initial values
-    () async {
-      final privateResult = await ReadingStreams.getInstance().privateUserStream.first;
-      final publicResult = await ReadingStreams.getInstance().publicUserStream.first;
-      if (!mounted) return;
-      setState(() {
-        final private = privateResult.data() as Map<String, dynamic>?;
-        final public = publicResult.data() as Map<String, dynamic>?;
-        _defaultCurrencyController.text = (private?["preferredCurrency"] as String?) ?? "USD";
-        _paymentReminderController.text = (private?["paymentReminderFrequency"] as String?) ?? "Never";
-        _requireFriendApprovalValue = public?["requireFriendApproval"] as bool? ?? false;
-        _automaticallyLogOutValue = private?["automaticallyLogOut"] as bool? ?? false;
-        _notificiationsValue = private?["notifications"] as bool? ?? false;
-        _areStreamsLoaded = true;
-      });
-    }();
   }
 
   @override
   Widget build(BuildContext context) {
     // Wait for the streams to load
     if (!_areStreamsLoaded) {
-      return Scaffold(
-        backgroundColor: Styles.backgroundColor,
-        body: Center(child: CircularProgressIndicator(color: Styles.accentColor)),
-      );
+      // Get initial values
+      final public = Provider.of<PublicUser?>(context);
+      final private = Provider.of<PrivateUser?>(context);
+      if (public != null && private != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _defaultCurrencyController.text = (private.data["preferredCurrency"] as String?) ?? "USD";
+          _paymentReminderController.text = (private.data["paymentReminderFrequency"] as String?) ?? "Never";
+          _requireFriendApprovalValue = public.data["requireFriendApproval"] as bool? ?? false;
+          _automaticallyLogOutValue = private.data["automaticallyLogOut"] as bool? ?? false;
+          _notificiationsValue = private.data["notifications"] as bool? ?? false;
+          setState(() {
+            _areStreamsLoaded = true;
+          });
+        });
+        return Scaffold(
+          backgroundColor: Styles.backgroundColor,
+          body: Center(child: CircularProgressIndicator(color: Styles.accentColor)),
+        );
+      }
     }
-    
     return SingleChildScrollView(
       child:Row(
         children: [
@@ -250,4 +248,12 @@ class _SettingsPageState extends State<SettingsPage> {
       );
     }
   }
+
+  @override
+  void dispose() {
+    _defaultCurrencyController.dispose();
+    _paymentReminderController.dispose();
+    super.dispose();
+  }
+
 }
