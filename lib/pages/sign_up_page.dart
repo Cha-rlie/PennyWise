@@ -66,6 +66,7 @@ class _SignUpPageState extends State<SignUpPage> {
                 validator: (value) {
                   return (value != null && value.trim().isNotEmpty && value.contains("@")) ? null : "Please enter a valid email";
                 },
+                keyboardType: TextInputType.emailAddress,
               ),
               SizedBox(height: height*0.05),
               TextFormField(
@@ -174,4 +175,12 @@ class _SignUpPageState extends State<SignUpPage> {
       }
     }
   }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
 }

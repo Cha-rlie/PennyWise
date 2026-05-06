@@ -84,7 +84,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   _currencies.map(
                     (currency) => DropdownMenuEntry(
                       value: currency.isoCode,
-                      label: "${currency.isoCode}: ${currency.name}",
+                      label: currency.isoCode,
                       labelWidget: Text("${currency.isoCode}: ${currency.name}", style: Styles.textFont))
                   )
                 ),

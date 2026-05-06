@@ -16,7 +16,7 @@ class ProfilePage extends StatefulWidget {
   State<ProfilePage> createState() => _ProfilePageState();
 
 }
-// TODO: add gesture to go back :D
+
 class _ProfilePageState extends State<ProfilePage> {
   final TextEditingController _usernameController = TextEditingController();
   String _initialUsername = "";
@@ -111,6 +111,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 ),
                                 child: Text("Save", style: Styles.headingFont)
                               ),
+                              SizedBox(height: height*0.3),
                               ElevatedButton(
                                 onPressed: () {
                                   HapticFeedback.lightImpact();

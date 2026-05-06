@@ -20,6 +20,10 @@ import 'package:provider/provider.dart';
 import 'package:penny_wise/styles.dart';
 import 'package:penny_wise/pages/pages_import.dart';
 
+// Globals
+// Global navigator key for navigation outside of widget context
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Ensure Flutter bindings are initialized before starting async operations
   await Firebase.initializeApp( // Initialize Firebase with config options
@@ -107,6 +111,8 @@ class MyApp extends StatelessWidget {
                   // Define named routes for navigation
                   '/profile': (context) => const ProfilePage(),
                 },
+                // Set the global navigator key for navigation outside of widget context
+                navigatorKey: navigatorKey,
               )
             );
           }

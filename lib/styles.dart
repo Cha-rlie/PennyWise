@@ -47,9 +47,15 @@ class Styles {
     color: negativeColor,
   );
 
+  static const TextStyle numberFont = TextStyle(
+    fontFamily: 'InstrumentSans',
+    fontSize: 24,
+    fontWeight: FontWeight.bold,
+    color: accentColor,
+  );
+
   // Input Decoration Styles
   static InputDecoration textFieldDecoration = InputDecoration(
-    labelText: "Email",
     labelStyle: headingFont,
     errorStyle: errorFont,
     filled: true,
@@ -61,7 +67,6 @@ class Styles {
   );
 
   static InputDecoration blackTextFieldDecoration = InputDecoration(
-    labelText: "Email",
     labelStyle: headingFont.copyWith(color: black),
     errorStyle: errorFont,
     filled: true,
@@ -72,12 +77,18 @@ class Styles {
     focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.negativeColor, width: 3))
   );
 
+    static InputDecoration plainTextFieldDecoration = InputDecoration(
+      filled: false,
+      border: InputBorder.none
+    );
+
   static InputDecorationTheme dropdownMenuDecorationTheme = InputDecorationTheme(
     labelStyle: headingFont,
     helperStyle: textFont.copyWith(color: grey),
     errorStyle: errorFont,
     filled: true,
     fillColor: lighterBackgroundColor,
+    border: InputBorder.none,
     enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.white, width: 3)),
     disabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.grey, width: 3)),
     focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.accentColor, width: 3)),
@@ -85,9 +96,21 @@ class Styles {
     focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.negativeColor, width: 3))
   );
 
+    static InputDecorationTheme smallDropdownMenuDecorationTheme = InputDecorationTheme(
+      filled: true,
+      fillColor: primaryColor,
+      border: InputBorder.none,
+    );
+
   static MenuStyle dropdownMenuStyle = MenuStyle(
     backgroundColor: WidgetStateProperty.fromMap( {
       WidgetState.any: lighterBackgroundColor,
+    }),
+  );
+
+    static MenuStyle smallDropdownMenuStyle = MenuStyle(
+    backgroundColor: WidgetStateProperty.fromMap( {
+      WidgetState.any: primaryColor,
     }),
   );
 }
