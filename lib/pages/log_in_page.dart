@@ -144,7 +144,7 @@ class _LogInPageState extends State<LogInPage> {
            // default username is the part of the email before the @
            //this can be changed in the Profile page after signing up
           "username": user.email!.split("@")[0],
-          "requireFriendApproval": false,
+          "acceptingNewFriends": false,
         },
         SetOptions(merge: true));
       }
@@ -158,12 +158,15 @@ class _LogInPageState extends State<LogInPage> {
           "preferredCurrency": "USD",
           "automaticallyLogOut": false,
           "notifications": false,
-          "paymentReminderFrequency": "Never"
+          "paymentReminderFrequency": "Never",
         },
         SetOptions(merge: true));
       }
       if (!mounted) return;
-      setState(() => isLoading = false);
+      // Pull exchange rates from API
+      await ReadingStreams.getInstance().initExchangeRates();
+      // Only once all the backend is finished, continue on
+      //setState(() => isLoading = false);
       ReadingStreams.isPostAuthDataComplete.value = true;
     } on FirebaseAuthException catch (error) {
       setState(() => isLoading = false);

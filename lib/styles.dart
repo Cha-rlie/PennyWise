@@ -66,6 +66,17 @@ class Styles {
     focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.negativeColor, width: 3))
   );
 
+    static InputDecorationThemeData textFieldDecorationTheme = InputDecorationThemeData(
+      labelStyle: headingFont,
+      errorStyle: errorFont,
+      filled: true,
+      fillColor: lighterBackgroundColor,
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.white, width: 3)),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.accentColor, width: 3)),
+      errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.negativeColor, width: 3)),
+      focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.negativeColor, width: 3))
+    );
+
   static InputDecoration blackTextFieldDecoration = InputDecoration(
     labelStyle: headingFont.copyWith(color: black),
     errorStyle: errorFont,
@@ -79,6 +90,7 @@ class Styles {
 
     static InputDecoration plainTextFieldDecoration = InputDecoration(
       filled: false,
+      errorStyle: errorFont,
       border: InputBorder.none
     );
 
@@ -95,11 +107,11 @@ class Styles {
     errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.negativeColor, width: 3)),
     focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.negativeColor, width: 3))
   );
-
+  
     static InputDecorationTheme smallDropdownMenuDecorationTheme = InputDecorationTheme(
       filled: true,
       fillColor: primaryColor,
-      border: InputBorder.none,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.primaryColor, width: 0.1)),
     );
 
   static MenuStyle dropdownMenuStyle = MenuStyle(

@@ -1,13 +1,11 @@
-import 'dart:nativewrappers/_internal/vm/lib/ffi_patch.dart';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:money2/money2.dart';
 import 'package:penny_wise/model/document_snapshot_wrappers.dart';
-import 'package:penny_wise/model/reading_streams.dart';
 import 'package:penny_wise/styles.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 
 class AddExpensePage extends StatefulWidget {
   const AddExpensePage({super.key});
@@ -20,8 +18,8 @@ class AddExpensePage extends StatefulWidget {
 class _AddExpensePageState extends State<AddExpensePage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _areStreamsLoaded = false;
-  late List<String> _trips;
-  late List<String> _friends;
+  List<String> _trips = [];
+  List<String> _friends = [];
   List<String> _selectedFriends = [];
 
   // Input controllers
@@ -30,6 +28,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
   final TextEditingController _currencyController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   DateTime _expenseDate = DateTime.now();
+  final TextEditingController _dateController = TextEditingController(text: DateFormat('dd/MM/yyyy').format(DateTime.now()));
   bool _isTripExpense = false;
   final TextEditingController _tripController = TextEditingController();
   final TextEditingController _friendsController = TextEditingController();
@@ -49,10 +48,11 @@ class _AddExpensePageState extends State<AddExpensePage> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           setState(() {
+            _nameController.text = "Name...";
             _amountController.text = "00";
             _currencyController.text = (private.data["preferredCurrency"] as String?) ?? "USD";
             _trips = List<String>.from(private.data["trips"] ?? []);
-            _friends = List<String>.from(public.data["friends"] ?? []);
+            _friends = List<String>.from(private.data["friends"] ?? []);
             _expenseSplitStrategyController.text = "Evenly";
             _areStreamsLoaded = true;
           });
@@ -64,26 +64,27 @@ class _AddExpensePageState extends State<AddExpensePage> {
       }
     }
     return SingleChildScrollView(
-      child: Row(
-        children: [
-          SizedBox(width: MediaQuery.of(context).size.width*0.1), // Left padding
-          Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.center,
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: MediaQuery.of(context).size.width * 0.1),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             spacing: 10,
             children: [
               SizedBox(height: 90), // Top padding
-              Text("Add Expense", style: Styles.subTitleFont),
+              //Text("Add Expense", style: Styles.headingFont),
               Form(
                 key: _formKey,
                 autovalidateMode: AutovalidateMode.onUnfocus,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  spacing: MediaQuery.of(context).size.height*0.1,
+                  mainAxisSize: MainAxisSize.min,
+                  spacing: MediaQuery.of(context).size.height*0.02,
                   children: [
                     TextFormField(
                       controller: _nameController,
+                      textAlign: TextAlign.center,
                       decoration: Styles.plainTextFieldDecoration,
                       style: Styles.subTitleFont,
                       validator: (value) {
@@ -93,20 +94,20 @@ class _AddExpensePageState extends State<AddExpensePage> {
                     Row(
                       children: [
                         // Symbol for the currency
-                        Text(_currencies.firstWhere((currency) => currency.isoCode == _currencyController.text, orElse: () => Currency.create(_currencyController.text, 2)).symbol, style: Styles.numberFont),
+                        Text(_currencies.firstWhere((currency) => currency.isoCode == (_currencyController.text.isNotEmpty ? _currencyController.text : "USD"), orElse: () => Currency.create((_currencyController.text.isNotEmpty ? _currencyController.text : "USD"), 2)).symbol, style: Styles.numberFont.copyWith(fontSize: 50)),
                         // Value of the expense
-                        TextFormField(
+                        Expanded(child: TextFormField(
                           controller: _amountController,
                           decoration: Styles.plainTextFieldDecoration,
-                          style: Styles.numberFont,
+                          style: Styles.numberFont.copyWith(fontSize: 50),
                           validator: (value) {
-                            return (value != null && value.trim().isNotEmpty) ? null : "Please enter a number or fill all the exact values for each person and hit save.";
+                            return (value != null && value.trim().isNotEmpty && double.tryParse(value) != null && double.tryParse(value)! > 0) ? null : "Please enter a valid amount greater than 0";
                           },
                           keyboardType: TextInputType.numberWithOptions(decimal: true),
                           inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
-                        ),
+                        )),
                         // Dropdown for the currency
-                        DropdownMenuFormField(
+                        Flexible(child: DropdownMenuFormField(
                           controller: _currencyController,
                           dropdownMenuEntries: List<DropdownMenuEntry<String>>.from(
                             _currencies.map(
@@ -116,15 +117,15 @@ class _AddExpensePageState extends State<AddExpensePage> {
                                 labelWidget: Text("${currency.isoCode}: ${currency.name}", style: Styles.textFont.copyWith(color: Styles.accentColor)))
                             )
                           ),
-                          initialSelection: _currencyController.text,
+                          initialSelection: _currencyController.text.isNotEmpty ? _currencyController.text : "USD",
                           menuHeight: 300,
                           requestFocusOnTap: true,
-                          textStyle: Styles.textFont,
+                          textStyle: Styles.textFont.copyWith(color: Styles.accentColor, fontWeight: FontWeight.bold),
                           inputDecorationTheme: Styles.smallDropdownMenuDecorationTheme,
                           menuStyle: Styles.smallDropdownMenuStyle,
-                          trailingIcon: Icon(Icons.keyboard_arrow_down, color: Styles.white),
-                          selectedTrailingIcon: Icon(Icons.keyboard_arrow_up, color: Styles.white),
-                        ),
+                          trailingIcon: Icon(Icons.keyboard_arrow_down, color: Styles.accentColor),
+                          selectedTrailingIcon: Icon(Icons.keyboard_arrow_up, color: Styles.accentColor),
+                        )),
                       ],
                     ),
                     TextFormField(
@@ -139,20 +140,48 @@ class _AddExpensePageState extends State<AddExpensePage> {
                       width: MediaQuery.of(context).size.width*0.8,
                       child: Theme(
                         data: Theme.of(context).copyWith(
-                          inputDecorationTheme: Styles.textFieldDecoration
+                          inputDecorationTheme: Styles.textFieldDecorationTheme
                         ),
-                        child: InputDatePickerFormField(
-                          onDateSaved: (dateValue) => _expenseDate = dateValue,
-                          fieldLabelText: "Expense Date",
-                          fieldHintText: "Select your date",
-                          errorFormatText: "Invalid date format, please use DD/MM/YYYY",
-                          errorInvalidText: "Invalid text. Try using the selector for a smoother experience.",
-                          initialDate: DateTime.now(),
-                          // You can add dates from up to 2 years ago to 1 year in the future
-                          firstDate: DateTime.now().subtract(Duration(days: 365 * 2)), // 5 year range
-                          lastDate: DateTime.now().add(Duration(days: 365)),
-                          acceptEmptyDate: false,
-                        ),
+                        child: TextFormField(
+                          controller: _dateController,
+                          readOnly: true,
+                          decoration: Styles.textFieldDecoration.copyWith(labelText: "Expense Date", suffixIcon: Icon(Icons.calendar_today, color: Styles.white)),
+                          style: Styles.textFont,
+                          onTap: () async {
+                            final DateTime? datePicked = await showDatePicker(
+                              context: context,
+                              initialDate: _expenseDate,
+                              firstDate: DateTime.now().subtract(Duration(days: 365 * 2)),
+                              lastDate: DateTime.now().add(Duration(days: 365)),
+                              builder: (context, child) {
+                                return Theme(
+                                  data: Theme.of(context).copyWith(
+                                    colorScheme: ColorScheme.light(
+                                      primary: Styles.accentColor,
+                                      onPrimary: Styles.white,
+                                      onSurface: Styles.lighterBackgroundColor,
+                                    ),
+                                    textButtonTheme: TextButtonThemeData(
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: Styles.accentColor,
+                                      ),
+                                    ),
+                                  ),
+                                  child: child!,
+                                );
+                              }
+                            );
+                            if (datePicked != null) {
+                              setState(() {
+                                _expenseDate = datePicked;
+                                _dateController.text = DateFormat('dd/MM/yyyy').format(datePicked);
+                              });
+                            }
+                          },
+                          validator: (value) {
+                            return (value != null && value.isNotEmpty) ? null : "Please select a date";
+                          },
+                        )
                       )
                     ),
                     SizedBox(
@@ -173,7 +202,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                         inactiveTrackColor: Styles.grey,
                       ),
                     ),
-                    if (_isTripExpense && _trips.isEmpty) Text("No trips found! Add trips to your profile to easily categorize expenses.", style: Styles.errorFont, textAlign: TextAlign.center),
+                    if (_isTripExpense && _trips.isEmpty) Text("No trips found! Add trips to your account to easily categorize expenses.", style: Styles.errorFont, textAlign: TextAlign.center),
                     if (_isTripExpense && _trips.isNotEmpty) DropdownMenu(
                       controller: _tripController,
                       label: Text("Trip", style: Styles.headingFont),
@@ -200,7 +229,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                     if (!_isTripExpense) 
                     Column(
                       children: [
-                        if (_friends.isEmpty) Text("No friends found! Add friends to your profile to easily split expenses with them.", style: Styles.errorFont, textAlign: TextAlign.center),
+                        if (_friends.isEmpty) Text("No friends found! Add friends to your account to easily split expenses with them.", style: Styles.errorFont, textAlign: TextAlign.center),
                         if (_friends.isNotEmpty) DropdownMenu(
                           controller: _friendsController,
                           label: Text("Friends Involved", style: Styles.headingFont),
@@ -268,7 +297,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                         DropdownMenuEntry(value: "Percentages", label: "Percentages", labelWidget: Text("Percentages", style: Styles.textFont)),
                         DropdownMenuEntry(value: "Exact Values", label: "Exact Values", labelWidget: Text("Exact Values", style: Styles.textFont)),
                       ],
-                      initialSelection: _expenseSplitStrategyController.text,
+                      initialSelection: _expenseSplitStrategyController.text.isNotEmpty ? _expenseSplitStrategyController.text : "Evenly",
                       requestFocusOnTap: true,
                       textStyle: Styles.textFont,
                       inputDecorationTheme: Styles.dropdownMenuDecorationTheme,
@@ -277,58 +306,61 @@ class _AddExpensePageState extends State<AddExpensePage> {
                       selectedTrailingIcon: Icon(Icons.keyboard_arrow_up, color: Styles.white),
                       width: MediaQuery.of(context).size.width*0.8,
                     ),
-                    ListView.builder(
-                      itemCount: _selectedFriends.length,
-                      itemBuilder: (context, index) {
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: List.generate(_selectedFriends.length, (index) {
                         return ListTile(
                           shape: Border(bottom: BorderSide(color: Styles.grey, width: 1)),
                           title: Row(
                             children: [
                               Text(_selectedFriends[index], style: Styles.textFont),
                               Spacer(),
-                              if (_expenseSplitStrategyController.text == "Exact Values" || _expenseSplitStrategyController.text == "Evenly") Text(_currencies.firstWhere((currency) => currency.isoCode == _currencyController.text, orElse: () => Currency.create(_currencyController.text, 2)).symbol, style: Styles.textFont),
-                              if (_expenseSplitStrategyController.text != "Evenly") SizedBox(
-                                width: 50,
-                                child: TextFormField(
-                                  controller: _amountPerPersonControllers[_selectedFriends[index]],
-                                  decoration: Styles.plainTextFieldDecoration,
-                                  style: Styles.textFont,
-                                  validator: (value) {
-                                    if (value == null || value.trim().isEmpty) {
-                                      return "Please enter a value";
-                                    }
-                                    if (_expenseSplitStrategyController.text == "Percentages") {
-                                      final num? percentage = num.tryParse(value);
-                                      if (percentage == null) {
-                                        return "Please enter a valid number";
+                              if (_expenseSplitStrategyController.text == "Exact Values" || _expenseSplitStrategyController.text == "Evenly")
+                                Text(
+                                  _currencies.firstWhere(
+                                    (currency) => currency.isoCode == (_currencyController.text.isNotEmpty ? _currencyController.text : "USD"),
+                                    orElse: () => Currency.create((_currencyController.text.isNotEmpty ? _currencyController.text : "USD"), 2)
+                                  ).symbol,
+                                  style: Styles.textFont
+                                ),
+                              if (_expenseSplitStrategyController.text != "Evenly")
+                                SizedBox(
+                                  width: 50,
+                                  child: TextFormField(
+                                    controller: _amountPerPersonControllers[_selectedFriends[index]],
+                                    decoration: Styles.plainTextFieldDecoration,
+                                    style: Styles.textFont,
+                                    validator: (value) {
+                                      if (value == null || value.trim().isEmpty) return "Please enter a value";
+                                      if (_expenseSplitStrategyController.text == "Percentages") {
+                                        final num? percentage = num.tryParse(value);
+                                        if (percentage == null) return "Please enter a valid number";
+                                        if (percentage <= 0 || percentage >= 100) return "Please enter a percentage between 0 and 100";
+                                      } else if (_expenseSplitStrategyController.text == "Exact Values") {
+                                        final num? amount = num.tryParse(value);
+                                        if (amount == null) return "Please enter a valid number";
+                                        if (amount <= 0) return "Please enter an amount greater than or equal to 0";
                                       }
-                                      if (percentage <= 0 || percentage >= 100) {
-                                        return "Please enter a percentage between 0 and 100";
-                                      }
-                                    } else if (_expenseSplitStrategyController.text == "Exact Values") {
-                                      final num? amount = num.tryParse(value);
-                                      if (amount == null) {
-                                        return "Please enter a valid number";
-                                      }
-                                      if (amount <= 0) {
-                                        return "Please enter an amount greater than 0";
-                                      }
-                                    }
-                                    return null;
-                                  },
-                                  keyboardType: TextInputType.numberWithOptions(decimal: true),
-                                  inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
-                                )
-                              ),
-                              if (_expenseSplitStrategyController.text == "Exact Values") SizedBox(
-                                width: 50,
-                                child: Text((num.tryParse(_amountController.text)!/ _selectedFriends.length).toStringAsFixed(2), style: Styles.textFont),
-                              ),
-                              if (_expenseSplitStrategyController.text == "Percentages") Text("%", style: Styles.textFont),
+                                      return null;
+                                    },
+                                    keyboardType: TextInputType.numberWithOptions(decimal: true),
+                                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
+                                  ),
+                                ),
+                              if (_expenseSplitStrategyController.text == "Exact Values")
+                                SizedBox(
+                                  width: 50,
+                                  child: Text(
+                                    (num.tryParse(_amountController.text)! / _selectedFriends.length).toStringAsFixed(2),
+                                    style: Styles.textFont
+                                  ),
+                                ),
+                              if (_expenseSplitStrategyController.text == "Percentages")
+                                Text("%", style: Styles.textFont),
                             ],
                           ),
                         );
-                      },
+                      }),
                     ),
                     ElevatedButton(
                       onPressed: () {
@@ -344,14 +376,15 @@ class _AddExpensePageState extends State<AddExpensePage> {
                         side: BorderSide(color: Styles.white, width: 3),
                         padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20)
                       ),
-                      child: Text("Save", style: Styles.headingFont)),
+                      child: Text("Save", style: Styles.headingFont)
+                    ),
+                    SizedBox(height: 30), // Spacing for the bottom of the page
                   ],
                 )
               )
             ]
-          ),
-          SizedBox(width: MediaQuery.of(context).size.width*0.1), // Right padding
-        ]
+        ),
+          //SizedBox(width: MediaQuery.of(context).size.width*0.1), // Right padding
       )
     );
   }
@@ -451,7 +484,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
     final expenseDoc = await FirebaseFirestore.instance.collection("expenses").add({
       "name": _nameController.text,
       "amount": num.tryParse(_amountController.text),
-      "currency": _currencyController.text,
+      "currency": _currencyController.text.substring(0, 3), // Extract ISO code from label
       "description": _descriptionController.text,
       "date": _expenseDate,
       "isTripExpense": _isTripExpense,

@@ -22,8 +22,8 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _defaultCurrencyChanged = false;
   final TextEditingController _paymentReminderController = TextEditingController();
   bool _paymentReminderChanged = false;
-  bool _requireFriendApprovalValue = false;
-  bool _requireFriendApprovalChanged = false;
+  bool _acceptingNewFriendsValue = false;
+  bool _acceptingNewFriendsChanged = false;
   bool _automaticallyLogOutValue = false;
   bool _automaticallyLogOutChanged = false;
   bool _notificiationsValue = false;
@@ -51,7 +51,7 @@ class _SettingsPageState extends State<SettingsPage> {
           if (!mounted) return;
           _defaultCurrencyController.text = (private.data["preferredCurrency"] as String?) ?? "USD";
           _paymentReminderController.text = (private.data["paymentReminderFrequency"] as String?) ?? "Never";
-          _requireFriendApprovalValue = public.data["requireFriendApproval"] as bool? ?? false;
+          _acceptingNewFriendsValue = public.data["acceptingNewFriends"] as bool? ?? false;
           _automaticallyLogOutValue = private.data["automaticallyLogOut"] as bool? ?? false;
           _notificiationsValue = private.data["notifications"] as bool? ?? false;
           setState(() {
@@ -143,14 +143,14 @@ class _SettingsPageState extends State<SettingsPage> {
               SizedBox(
                 width: MediaQuery.of(context).size.width*0.8,
                 child: SwitchListTile(
-                  title: Text("Friend Approval", style: Styles.headingFont),
-                  subtitle: Text("People cannot add you as a friend unless you approve their request.", style: Styles.textFont.copyWith(color: Styles.grey)),
-                  value: _requireFriendApprovalValue,
+                  title: Text("New Friends", style: Styles.headingFont),
+                  subtitle: Text("Do you want to accept new friend requests?", style: Styles.textFont.copyWith(color: Styles.grey)),
+                  value: _acceptingNewFriendsValue,
                   onChanged: (bool value) {
                     HapticFeedback.lightImpact();
                     setState(() {
-                      _requireFriendApprovalValue = value;
-                      _requireFriendApprovalChanged = true;
+                      _acceptingNewFriendsValue = value;
+                      _acceptingNewFriendsChanged = true;
                     });
                   },
                   activeThumbColor: Styles.accentColor,
@@ -199,7 +199,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
   Future<void> _saveSettings() async {
-    if (!_defaultCurrencyChanged && !_paymentReminderChanged && !_requireFriendApprovalChanged && !_automaticallyLogOutChanged && !_notificationsChanged) {
+    if (!_defaultCurrencyChanged && !_paymentReminderChanged && !_acceptingNewFriendsChanged && !_automaticallyLogOutChanged && !_notificationsChanged) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("No changes to save!", style: Styles.textFont), showCloseIcon: true, duration: Duration(seconds: 3), backgroundColor: Styles.grey, behavior: SnackBarBehavior.floating, margin: EdgeInsets.all(20), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Styles.white, width: 3)))
@@ -208,7 +208,7 @@ class _SettingsPageState extends State<SettingsPage> {
     }
     if (_defaultCurrencyChanged) {
       await FirebaseFirestore.instance.collection("private-users").doc(FirebaseAuth.instance.currentUser!.uid).update({
-        "preferredCurrency": _defaultCurrencyController.text
+        "preferredCurrency": _defaultCurrencyController.text.substring(0, 3) // Extract ISO code from label
       });
       _defaultCurrencyChanged = false;
     }
@@ -218,11 +218,11 @@ class _SettingsPageState extends State<SettingsPage> {
       });
       _paymentReminderChanged = false;
     }
-    if (_requireFriendApprovalChanged) {
+    if (_acceptingNewFriendsChanged) {
       await FirebaseFirestore.instance.collection("public-users").doc(FirebaseAuth.instance.currentUser!.uid).update({
-        "requireFriendApproval": _requireFriendApprovalValue
+        "acceptingNewFriends": _acceptingNewFriendsValue
       });
-      _requireFriendApprovalChanged = false;
+      _acceptingNewFriendsChanged = false;
     }
     if (_automaticallyLogOutChanged) {
       await FirebaseFirestore.instance.collection("private-users").doc(FirebaseAuth.instance.currentUser!.uid).update({

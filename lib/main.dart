@@ -9,8 +9,6 @@ import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:penny_wise/firebase_options.dart'; // Config file for Firebase
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:penny_wise/model/document_snapshot_wrappers.dart';
-import 'package:penny_wise/model/reading_streams.dart';
 
 // Import community-made packages
 import 'package:provider/provider.dart';
@@ -19,6 +17,8 @@ import 'package:provider/provider.dart';
 // Import self-made custom styles and pages
 import 'package:penny_wise/styles.dart';
 import 'package:penny_wise/pages/pages_import.dart';
+import 'package:penny_wise/model/document_snapshot_wrappers.dart';
+import 'package:penny_wise/model/reading_streams.dart';
 
 // Globals
 // Global navigator key for navigation outside of widget context
@@ -98,6 +98,11 @@ class MyApp extends StatelessWidget {
                   initialData: null,
                   create: (context) => ReadingStreams.getInstance().privateUserStream
                     .map((snapshot) => snapshot.exists ? PrivateUser(snapshot.data() as Map<String, dynamic>) : null),
+                ),
+                StreamProvider<Friendships?>(
+                  initialData: null,
+                  create: (context) => ReadingStreams.getInstance().friendshipsStream
+                    .map((snapshot) => Friendships(snapshot.docs)),
                 ),
               ],
               child: MaterialApp( // Uses Google's Material Design system

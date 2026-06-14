@@ -139,7 +139,7 @@ class _SignUpPageState extends State<SignUpPage> {
            // default username is the part of the email before the @
            //this can be changed in the Profile page after signing up
           "username": user.email!.split("@")[0],
-          "requireFriendApproval": false,
+          "acceptingNewFriends": false,
         });
       await FirebaseFirestore.instance
         .collection("private-users")
@@ -149,9 +149,12 @@ class _SignUpPageState extends State<SignUpPage> {
           "preferredCurrency": "USD",
           "automaticallyLogOut": false,
           "notifications": false,
-          "paymentReminderFrequency": "Never"
-        });  
-      setState(() => isLoading = false);
+          "paymentReminderFrequency": "Never",
+        });
+      // Pull exchange rates from API
+      await ReadingStreams.getInstance().initExchangeRates();
+      // Only once all the backend is finished, continue on
+      //setState(() => isLoading = false);
       ReadingStreams.isPostAuthDataComplete.value = true;
     } on FirebaseAuthException catch (error) {
       setState(() => isLoading = false);

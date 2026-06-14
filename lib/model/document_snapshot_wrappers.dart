@@ -1,6 +1,8 @@
 // DocumentSnapshot types cannot be distinguished
 // These wrapper classes provide a way to distinguish them
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class PublicUser {
   final Map<String, dynamic> data;
   PublicUser(this.data);
@@ -17,4 +19,9 @@ class PrivateUser {
   bool get automaticallyLogOut => data["automaticallyLogOut"];
   bool get notifications => data["notifications"];
   String get paymentReminderFrequency => data["paymentReminderFrequency"];
+}
+
+class Friendships {
+  final List<QueryDocumentSnapshot> documents;
+  Friendships(this.documents);
 }
