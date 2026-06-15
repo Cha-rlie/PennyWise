@@ -1,4 +1,5 @@
-import 'package:penny_wise/model/reading_streams.dart';
+import 'package:penny_wise/model/currency_conversion.dart';
+import 'package:penny_wise/model/data_handling_util.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -21,12 +22,11 @@ class _FriendsPageState extends State<FriendsPage> {
   bool _areStreamsLoaded = false;
   bool _showAddFriendForm = false;
   String _friendSearchError = "";
-  String _preferredCurrencySymbol = "";
   List<Map<String, dynamic>> _friends = [];
+  String _userPreferredCurrency = "";
 
   // Input controllers
   final TextEditingController _nameSearchController = TextEditingController();
-  final TextEditingController _friendsController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -38,40 +38,11 @@ class _FriendsPageState extends State<FriendsPage> {
       if (friendships != null && private != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) async {
           if (!mounted) return;
-          // Fetch all usernames and friend info from friendships stream in advance
-          final friends = await Future.wait(
-            friendships.documents.map((document) async {
-              final data = document.data() as Map<String, dynamic>;
-              final friendId = (data["members"] as List).firstWhere((id) => id != FirebaseAuth.instance.currentUser!.uid);
-              
-              // Get their username from the public-users collection
-              final friendPublicDoc = await FirebaseFirestore.instance
-                .collection("public-users")
-                .doc(friendId)
-                .get();
-              final friendUsername = friendPublicDoc.data()?["username"] as String? ?? friendId;
-              
-              // Get money and convert it to default currency
-              final debtInUSD = ((data["totalDebt"] as Map?)?[FirebaseAuth.instance.currentUser!.uid] as num?)?.toDouble() ?? 0.0;
-              final userPreferredCurrency = (private.data["preferredCurrency"] as String?) ?? "USD";
-              final convertedDebt = ReadingStreams.getInstance().convertFromUSD(debtInUSD, userPreferredCurrency);
-              // Format using Money2
-              final formattedConvertedDebt = Money.fromNum(convertedDebt, isoCode: userPreferredCurrency);
-              return {
-                "friendshipId": document.id,
-                "friendId": friendId,
-                "friendName": friendUsername,
-                "balance": formattedConvertedDebt
-              };
-            }).toList()
-          );
-
           setState(() {
             _nameSearchController.text = "";
-            _friendsController.text = "";
-            _friends = friends;
-            _preferredCurrencySymbol = Currency.create((private.data["preferredCurrency"] as String?) ?? "USD", 2).symbol;
+            _friends = friendships.friends;
             _areStreamsLoaded = true;
+            _userPreferredCurrency = (private.data["preferredCurrency"] as String?) ?? "USD";
           });
         });
         return Scaffold(
@@ -107,7 +78,21 @@ class _FriendsPageState extends State<FriendsPage> {
                       children: [
                         Text(friend["friendName"] ?? "Unknown", style: Styles.textFont),
                         // Change colour automatically based off if the debt is in the negative or not
-                        Text((friend["balance"] as Money).toString(), style: Styles.textFont.copyWith(color: (friend["balance"] as Money).isNegative ? Styles.red : Styles.primaryColor, fontWeight: FontWeight.bold))
+                        Builder(
+                          builder: (context) {
+                            final balanceUSD = (friend["balanceUSD"] as num? ?? 0).toDouble();
+                            return Text(
+                              Money.fromNum(
+                                CurrencyConversion.getInstance().convertFromUSD(balanceUSD, _userPreferredCurrency),
+                                isoCode: _userPreferredCurrency,
+                              ).toString(),
+                              style: Styles.textFont.copyWith(
+                                color: balanceUSD < 0 ? Styles.red : Styles.primaryColor,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            );
+                          },
+                        )
                       ]
                     )
                   ]
@@ -200,7 +185,7 @@ class _FriendsPageState extends State<FriendsPage> {
                                         final newFriendUser = usernameSearchQuery.docs.first;
                                         final checkAlreadyFriend = await FirebaseFirestore.instance
                                           .collection("friendships")
-                                          .where("membersKey", isEqualTo: generateFriendshipMembersKey(FirebaseAuth.instance.currentUser!.uid, newFriendUser.id))
+                                          .where("membersKey", isEqualTo: DataHandlingUtil.generateFriendshipMembersKey(FirebaseAuth.instance.currentUser!.uid, newFriendUser.id))
                                           .get();
                                         if (checkAlreadyFriend.docs.isEmpty) { // Not already friends
                                           // Surround the checking of their acceptingNewFriends value with a catch just in case their field is missing
@@ -212,7 +197,7 @@ class _FriendsPageState extends State<FriendsPage> {
                                               .set(
                                                 {
                                                   "members": [FirebaseAuth.instance.currentUser!.uid, newFriendUser.id],
-                                                  "membersKey": generateFriendshipMembersKey(FirebaseAuth.instance.currentUser!.uid, newFriendUser.id),
+                                                  "membersKey": DataHandlingUtil.generateFriendshipMembersKey(FirebaseAuth.instance.currentUser!.uid, newFriendUser.id),
                                                   "createdAt": FieldValue.serverTimestamp(),
                                                   "totalDebt": {FirebaseAuth.instance.currentUser!.uid: 0.0, newFriendUser.id: 0.0},
                                                 }
@@ -266,11 +251,6 @@ class _FriendsPageState extends State<FriendsPage> {
         ]
       )
     );
-  }
-
-  String generateFriendshipMembersKey(String userId1, String userId2) {
-    List<String> sortedIds = [userId1, userId2]..sort();
-    return sortedIds.join("_");
   }
 
 }

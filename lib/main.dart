@@ -2,13 +2,16 @@
 import 'dart:math';
 import 'dart:ui';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 // Import official Firebase packages for authentication and database
 import 'package:firebase_core/firebase_core.dart';
+import 'package:money2/money2.dart';
 import 'package:penny_wise/firebase_options.dart'; // Config file for Firebase
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:penny_wise/model/currency_conversion.dart';
 
 // Import community-made packages
 import 'package:provider/provider.dart';
@@ -71,6 +74,7 @@ class MyApp extends StatelessWidget {
               );
             }
             ReadingStreams.initialize(user.uid);
+            CurrencyConversion.initialize();
             if (!isPostAuthDataComplete) {
               // While waiting for post-authentication data management
               return MaterialApp( // Uses Google's Material Design system
@@ -102,8 +106,36 @@ class MyApp extends StatelessWidget {
                 StreamProvider<Friendships?>(
                   initialData: null,
                   create: (context) => ReadingStreams.getInstance().friendshipsStream
-                    .map((snapshot) => Friendships(snapshot.docs)),
+                    .asyncMap((snapshot) async {
+                      final friends = await Future.wait(
+                        snapshot.docs.map((document) async {
+                          final data = document.data() as Map<String, dynamic>;
+                          final friendId = (data["members"] as List).firstWhere((id) => id != FirebaseAuth.instance.currentUser!.uid);
+                          
+                          // Get their username from the public-users collection
+                          final friendPublicDoc = await FirebaseFirestore.instance
+                            .collection("public-users")
+                            .doc(friendId)
+                            .get();
+                          final friendUsername = friendPublicDoc.data()?["username"] as String? ?? friendId;
+                          
+                          return {
+                            "friendshipId": document.id,
+                            "friendId": friendId,
+                            "friendName": friendUsername,
+                            "balanceUSD": ((data["totalDebt"] as Map?)?[FirebaseAuth.instance.currentUser!.uid] as num?)?.toDouble() ?? 0.0
+                          };
+                        }).toList(),
+                      );
+                      return Friendships(friends);
+                    }
+                  ),
                 ),
+                StreamProvider<Trips?>(
+                  initialData: null,
+                  create: (context) => ReadingStreams.getInstance().tripsStream
+                    .map((snapshot) => Trips(snapshot.docs))
+                )
               ],
               child: MaterialApp( // Uses Google's Material Design system
                 title: 'Penny Wise',
@@ -258,4 +290,12 @@ class _AppMainShellState extends State<AppMainShell> {
       )
     );
   }
+
+  @override
+  void dispose() {
+    ReadingStreams.dispose();
+    CurrencyConversion.dispose();
+    super.dispose();
+  }
+
 }

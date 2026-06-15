@@ -22,6 +22,11 @@ class PrivateUser {
 }
 
 class Friendships {
+  final List<Map<String, dynamic>> friends;
+  Friendships(this.friends);
+}
+
+class Trips {
   final List<QueryDocumentSnapshot> documents;
-  Friendships(this.documents);
+  Trips(this.documents);
 }

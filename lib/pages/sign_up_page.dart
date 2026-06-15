@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:penny_wise/model/currency_conversion.dart';
 import 'package:penny_wise/model/reading_streams.dart';
 import 'package:penny_wise/styles.dart';
 
@@ -152,7 +153,7 @@ class _SignUpPageState extends State<SignUpPage> {
           "paymentReminderFrequency": "Never",
         });
       // Pull exchange rates from API
-      await ReadingStreams.getInstance().initExchangeRates();
+      await CurrencyConversion.getInstance().initExchangeRates();
       // Only once all the backend is finished, continue on
       //setState(() => isLoading = false);
       ReadingStreams.isPostAuthDataComplete.value = true;
