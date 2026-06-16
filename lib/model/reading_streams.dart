@@ -34,6 +34,6 @@ class ReadingStreams {
   late final Stream<QuerySnapshot> debtsOwingStream = _firestore.collection("debts").where("owedBy", isEqualTo: userId).snapshots().asBroadcastStream();
   late final Stream<QuerySnapshot> expensesStream = _firestore.collection("expenses").where("participants", arrayContains: userId).snapshots().asBroadcastStream();
   late final Stream<QuerySnapshot> friendshipsStream = _firestore.collection("friendships").where("members", arrayContains: userId).snapshots().asBroadcastStream();
-  late final Stream<QuerySnapshot> tripsStream = _firestore.collection("trips").where("participants", arrayContains: userId).snapshots().asBroadcastStream();
+  late final Stream<QuerySnapshot> tripsStream = _firestore.collection("trips").where("members", arrayContains: userId).snapshots().asBroadcastStream();
 
 }

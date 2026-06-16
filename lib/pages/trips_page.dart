@@ -1,11 +1,11 @@
-import 'package:penny_wise/model/currency_conversion.dart';
-import 'package:penny_wise/model/reading_streams.dart';
-
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:money2/money2.dart';
 import 'package:penny_wise/model/document_snapshot_wrappers.dart';
+import 'package:penny_wise/model/currency_conversion.dart';
 import 'package:penny_wise/styles.dart';
 import 'package:provider/provider.dart';
 
@@ -18,68 +18,46 @@ class TripsPage extends StatefulWidget {
 
 class _TripsPageState extends State<TripsPage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  bool _areStreamsLoaded = false;
   bool _showMakeTripForm = false;
   String _friendSearchError = "";
   String _tripFormError = "";
+  String _userPreferredCurrency = "";
   List<Map<String, dynamic>> _trips = [];
   List<Map<String, dynamic>> _friends = [];
 
   // Input controllers
   final TextEditingController _tripNameController = TextEditingController();
   final TextEditingController _tripDescriptionController = TextEditingController();
-  final TextEditingController _currencyController = TextEditingController();
+  final TextEditingController _defaultCurrencyController = TextEditingController();
   final TextEditingController _nameSearchController = TextEditingController();
   List<String> _friendsSelected = [];
 
+  // Preload all currencies
+  final List<Currency> _currencies = Currencies().getRegistered().toList();
+
   @override
   Widget build(BuildContext context) {
+    // Always watch these streams
+    final tripsStream = Provider.of<Trips?>(context);
+    final friendsStream = Provider.of<Friendships?>(context);
+    final private = Provider.of<PrivateUser?>(context);
     // Wait for the streams to load
-    if (!_areStreamsLoaded) {
-      // Get initial values
-      final rawTripsFromStream = Provider.of<Trips?>(context);
-      final friendsStream = Provider.of<Friendships?>(context);
-      final private = Provider.of<PrivateUser?>(context);
-      if (rawTripsFromStream != null && private != null && friendsStream != null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) async {
-          if (!mounted) return;
-          // Fetch all usernames and trip info from friendships stream in advance
-          final trips = await Future.wait(
-            rawTripsFromStream.documents.map((document) async {
-              final data = document.data() as Map<String, dynamic>;
-
-              // Get the memberIds of everyone else except the current user
-              final memberIds = List<String>.from((data["members"] as List).map((member) => member.toString()));
-              memberIds.remove(ReadingStreams.getInstance().userId);
-              
-              // Get money and convert it to default currency
-              final debtInUSD = ((data["totalDebt"] as Map?)?[FirebaseAuth.instance.currentUser!.uid] as num?)?.toDouble() ?? 0.0;
-              final userPreferredCurrency = (private.data["preferredCurrency"] as String?) ?? "USD";
-              final convertedDebt = CurrencyConversion.getInstance().convertFromUSD(debtInUSD, userPreferredCurrency);
-              // Format using Money2
-              final formattedConvertedDebt = Money.fromNum(convertedDebt, isoCode: userPreferredCurrency);
-              return {
-                "tripId": document.id,
-                "tripName": data["name"],
-                "balance": formattedConvertedDebt,
-                "memberIds": memberIds
-              };
-            }).toList()
-          );
-
-          setState(() {
-            _nameSearchController.text = "";
-            _trips = trips;
-            _friends = friendsStream.friends;
-            _areStreamsLoaded = true;
-          });
-        });
-        return Scaffold(
-          backgroundColor: Styles.backgroundColor,
-          body: Center(child: CircularProgressIndicator(color: Styles.accentColor)),
-        );
-      }
+    if (tripsStream == null || friendsStream == null || private == null) {
+      // Return temporary loading UI while loading
+      return Scaffold(
+        backgroundColor: Styles.backgroundColor,
+        body: Center(child: CircularProgressIndicator(color: Styles.accentColor)),
+      );
     }
+    // Always sync from provider
+    _trips = tripsStream.trips;
+    _friends = friendsStream.friends;
+    _userPreferredCurrency = (private.data["preferredCurrency"] as String?) ?? "USD";
+    // Set the currency controller to be the initial selected currency, but only when it is empty on a build (1st time only likely)
+    if (_defaultCurrencyController.text.isEmpty) {
+      _defaultCurrencyController.text = _userPreferredCurrency;
+    }
+    
     return SizedBox.expand(
       child: Stack(
         children: [
@@ -107,7 +85,22 @@ class _TripsPageState extends State<TripsPage> {
                       children: [
                         Text(trip["tripName"] ?? "Unknown", style: Styles.textFont),
                         // Change colour automatically based off if the debt is in the negative or not
-                        Text((trip["balance"] as Money).toString(), style: Styles.textFont.copyWith(color: (trip["balance"] as Money).isNegative ? Styles.red : Styles.primaryColor, fontWeight: FontWeight.bold))
+                        // Change colour automatically based off if the debt is in the negative or not
+                        Builder(
+                          builder: (context) {
+                            final balanceUSD = (trip["balanceUSD"] as num? ?? 0).toDouble();
+                            return Text(
+                              Money.fromNum(
+                                CurrencyConversion.getInstance().convertFromUSD(balanceUSD, _userPreferredCurrency),
+                                isoCode: _userPreferredCurrency,
+                              ).toString(),
+                              style: Styles.textFont.copyWith(
+                                color: balanceUSD < 0 ? Styles.red : Styles.primaryColor,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            );
+                          },
+                        )
                       ]
                     )
                   ]
@@ -131,7 +124,11 @@ class _TripsPageState extends State<TripsPage> {
               ]
             )
           ),
-          if (_showMakeTripForm) Positioned.fill(
+          if (_showMakeTripForm) Positioned(
+            top: 100,
+            bottom: 0,
+            left: 0,
+            right: 0,
             child: Container(
               color: Styles.lighterBackgroundColor.withValues(alpha: 0.7),
               child: Center(
@@ -141,7 +138,7 @@ class _TripsPageState extends State<TripsPage> {
                     constraints: BoxConstraints(
                       maxHeight: MediaQuery.of(context).size.height * 0.75,
                       maxWidth: 600,
-                      minWidth: MediaQuery.of(context).size.width * 0.8
+                      minWidth: min(MediaQuery.of(context).size.width * 0.8, 600)
                     ),
                     child: Container(
                       decoration: BoxDecoration(
@@ -156,20 +153,46 @@ class _TripsPageState extends State<TripsPage> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             mainAxisSize: MainAxisSize.min,
-                            spacing: 10,
+                            spacing: 24,
                             children: [
                               Text("Make a Trip", style: Styles.subTitleFont.copyWith(fontSize: 36, height: 1.0)),
                               TextFormField(
                                 controller: _tripNameController,
-                                decoration: Styles.textFieldDecoration.copyWith(labelText: "Trip Name"),
+                                decoration: Styles.textFieldDecoration.copyWith(labelText: "Trip Name", helperText: "Short memorable name for your trip"),
                                 style: Styles.textFont,
                                 validator: (value) => (value != null && value.trim().isNotEmpty) ? null : "Please enter a trip name!",
                               ),
                               TextFormField(
                                 controller: _tripDescriptionController,
-                                decoration: Styles.textFieldDecoration.copyWith(labelText: "Trip Description"),
+                                decoration: Styles.textFieldDecoration.copyWith(labelText: "Trip Description", helperText: "What is this trip for?"),
                                 style: Styles.textFont,
                                 validator: (value) => (value != null && value.trim().isNotEmpty) ? null : "Please enter a trip description!",
+                              ),
+                              // Default currency picker
+                              DropdownMenuFormField(
+                                controller: _defaultCurrencyController,
+                                label: Text("Default Currency", style: Styles.headingFont),
+                                helperText: "Select your default currency",
+                                dropdownMenuEntries: List<DropdownMenuEntry<String>>.from(
+                                  _currencies.map(
+                                    (currency) => DropdownMenuEntry(
+                                      value: currency.isoCode,
+                                      label: currency.isoCode,
+                                      labelWidget: Text("${currency.isoCode}: ${currency.name}", style: Styles.textFont))
+                                  )
+                                ),
+                                initialSelection: _defaultCurrencyController.text,
+                                menuHeight: 300,
+                                requestFocusOnTap: true,
+                                textStyle: Styles.textFont,
+                                inputDecorationTheme: Styles.dropdownMenuDecorationTheme,
+                                menuStyle: Styles.dropdownMenuStyle,
+                                trailingIcon: Icon(Icons.keyboard_arrow_down, color: Styles.white),
+                                selectedTrailingIcon: Icon(Icons.keyboard_arrow_up, color: Styles.white),
+                                //width: MediaQuery.of(context).size.width*0.8,
+                                validator: (value) => _currencies.map((currency) {
+                                  return currency.isoCode;
+                                }).contains(_defaultCurrencyController.text.trim()) ? null : "Currency entered is not a valid currency! Use the drop down menu for convienience."
                               ),
                               if (_friends.isEmpty) Text("You have no friends to add. Go add some in the Friends page!", style: Styles.errorFont),
                               if (_friends.isNotEmpty) Row(
@@ -178,9 +201,9 @@ class _TripsPageState extends State<TripsPage> {
                                   Expanded(child:TextFormField(
                                     controller: _nameSearchController,
                                     style: Styles.textFont,
-                                    decoration: Styles.textFieldDecoration.copyWith(labelText: "Search username"),
-                                    validator: (value) => (value != null && value.trim().isNotEmpty) ? null : "Please enter a username to search for",
+                                    decoration: Styles.textFieldDecoration.copyWith(labelText: "Search username", hintText: "Search for friends to add by usernames"),
                                   )),
+                                  SizedBox(width: 10),
                                   IconButton.filled(
                                     icon: Icon(Icons.person_search, color: Styles.accentColor),
                                     style: IconButton.styleFrom(backgroundColor: Styles.primaryColor,
@@ -191,14 +214,13 @@ class _TripsPageState extends State<TripsPage> {
                                 ]
                               ),
                               if (_friendSearchError.isNotEmpty) Text(_friendSearchError, style: Styles.errorFont),
-                              SizedBox(height: 5),
                               if (_friendsSelected.isNotEmpty) Container(
                                 decoration: BoxDecoration(
                                   color: Styles.backgroundColor,
                                   border: Border.all(color: Styles.white, width: 1.5),
                                   borderRadius: BorderRadius.circular(20)
                                 ),
-                                padding: EdgeInsets.all(6),
+                                padding: EdgeInsets.all(10),
                                 child: Wrap(
                                   spacing: 8,
                                   runSpacing: 8,
@@ -218,6 +240,7 @@ class _TripsPageState extends State<TripsPage> {
                                   }).toList(),
                                 ),
                               ),
+                              if (_tripFormError.isNotEmpty) Text(_tripFormError, style: Styles.errorFont),
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -246,7 +269,6 @@ class _TripsPageState extends State<TripsPage> {
                                     ),
                                     onPressed: () => saveNewTrip()
                                   ),
-                                  if (_tripFormError.isNotEmpty) Text(_tripFormError, style: Styles.errorFont)
                                 ],
                               ),
                             ],
@@ -286,11 +308,13 @@ class _TripsPageState extends State<TripsPage> {
     setState(() {
       _friendsSelected.add(inputUsername);
       _friendSearchError = "";
+      // Reset the text in the search bar
+      _nameSearchController.text = "";
     });
     return;
   }
 
-  void saveNewTrip() {
+  Future<void> saveNewTrip() async {
     // Handle invalid input
     if (!_formKey.currentState!.validate()) {
       return;
@@ -300,11 +324,54 @@ class _TripsPageState extends State<TripsPage> {
       setState(() => _tripFormError = "You need at least 2 friends to make a trip!");
       return;
     }
+    // Handle all inputs valid
     if (_tripFormError != "") {
       // is setting a state ok while doing other stuff?
       setState(() => _tripFormError = "");
     }
-    // friendId = _friends.firstWhere((friend) => friend["friendName"] == inputUsername)["friendId"];
+    // Process and generate information in advance
+    final memberIds = [
+      FirebaseAuth.instance.currentUser!.uid, // Include current user
+      ..._friendsSelected.map((friend) { // Include Ids from all the selected friends
+        return _friends.firstWhere((friendFromStream) => friendFromStream["friendName"] == friend)["friendId"] as String;
+      })
+    ];
+    final Map<String, double> debts = {
+      for (var friendId in memberIds)
+        friendId: 0.0
+    };
+    // Save trip to the database
+    await FirebaseFirestore.instance
+      .collection("trips")
+      .doc()
+      .set(
+        {
+          "name": _tripNameController.text.trim(),
+          "description": _tripDescriptionController.text.trim(),
+          "members": memberIds,
+          "totalDebt": debts,
+          "createdAt": FieldValue.serverTimestamp(),
+        }
+      );
+    // User is found and friending is successful
+    if (!mounted) return;
+    setState(() {
+      _friendSearchError = "";
+      _showMakeTripForm = false;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("Trip made successfully!",
+        style: Styles.textFont),
+        showCloseIcon: true,
+        duration: Duration(seconds: 3),
+        backgroundColor: Styles.accentColor,
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.all(20),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Styles.white, width: 3))
+      )
+    );
   }
 
 }

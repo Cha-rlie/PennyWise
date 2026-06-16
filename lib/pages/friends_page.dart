@@ -19,7 +19,6 @@ class FriendsPage extends StatefulWidget {
 
 class _FriendsPageState extends State<FriendsPage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  bool _areStreamsLoaded = false;
   bool _showAddFriendForm = false;
   String _friendSearchError = "";
   List<Map<String, dynamic>> _friends = [];
@@ -30,27 +29,22 @@ class _FriendsPageState extends State<FriendsPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Always watch these streams
+    final friendships = Provider.of<Friendships?>(context);
+    final private = Provider.of<PrivateUser?>(context);
     // Wait for the streams to load
-    if (!_areStreamsLoaded) {
-      // Get initial values
-      final friendships = Provider.of<Friendships?>(context);
-      final private = Provider.of<PrivateUser?>(context);
-      if (friendships != null && private != null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) async {
-          if (!mounted) return;
-          setState(() {
-            _nameSearchController.text = "";
-            _friends = friendships.friends;
-            _areStreamsLoaded = true;
-            _userPreferredCurrency = (private.data["preferredCurrency"] as String?) ?? "USD";
-          });
-        });
-        return Scaffold(
-          backgroundColor: Styles.backgroundColor,
-          body: Center(child: CircularProgressIndicator(color: Styles.accentColor)),
-        );
-      }
+    if (friendships == null || private == null) {
+      // Return temporary loading UI while loading
+      return Scaffold(
+        backgroundColor: Styles.backgroundColor,
+        body: Center(child: CircularProgressIndicator(color: Styles.accentColor)),
+      );
     }
+    // Always sync from provider
+    _friends = friendships.friends;
+    _userPreferredCurrency = (private.data["preferredCurrency"] as String?) ?? "USD";
+
+    // Return UI
     return SizedBox.expand(
       child: Stack(
         children: [
@@ -251,6 +245,12 @@ class _FriendsPageState extends State<FriendsPage> {
         ]
       )
     );
+  }
+
+  @override
+  void dispose() {
+    _nameSearchController.dispose();
+    super.dispose();
   }
 
 }

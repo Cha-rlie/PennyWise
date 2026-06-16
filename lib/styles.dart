@@ -58,6 +58,8 @@ class Styles {
   static InputDecoration textFieldDecoration = InputDecoration(
     labelStyle: headingFont,
     errorStyle: errorFont,
+    helperStyle: textFont.copyWith(color: grey),
+    hintStyle: textFont,
     filled: true,
     fillColor: lighterBackgroundColor,
     enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.white, width: 3)),

@@ -134,7 +134,27 @@ class MyApp extends StatelessWidget {
                 StreamProvider<Trips?>(
                   initialData: null,
                   create: (context) => ReadingStreams.getInstance().tripsStream
-                    .map((snapshot) => Trips(snapshot.docs))
+                    .asyncMap((snapshot) async {
+                      final trips = await Future.wait(
+                        snapshot.docs.map((document) async {
+                          final data = document.data() as Map<String, dynamic>;
+
+                          // Get the memberIds of everyone else except the current user
+                          final memberIds = List<String>.from((data["members"] as List).map((member) => member.toString()));
+                          memberIds.remove(ReadingStreams.getInstance().userId);
+                          
+                          return {
+                            "tripId": document.id,
+                            "tripName": data["name"],
+                            "tripDescription": data["description"],
+                            "memberIds": memberIds,
+                            "balanceUSD": ((data["totalDebt"] as Map?)?[FirebaseAuth.instance.currentUser!.uid] as num?)?.toDouble() ?? 0.0,
+                          };
+                        }).toList()
+                      );
+                      return Trips(trips);
+                    }
+                  )
                 )
               ],
               child: MaterialApp( // Uses Google's Material Design system

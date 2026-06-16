@@ -76,7 +76,7 @@ class _SettingsPageState extends State<SettingsPage> {
             children: [
               SizedBox(height: 90), // Top padding
               Text("Preferences", style: Styles.subTitleFont),
-              DropdownMenu(
+              DropdownMenuFormField(
                 controller: _defaultCurrencyController,
                 label: Text("Default Currency", style: Styles.headingFont),
                 helperText: "Select your default currency",
@@ -98,6 +98,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 trailingIcon: Icon(Icons.keyboard_arrow_down, color: Styles.white),
                 selectedTrailingIcon: Icon(Icons.keyboard_arrow_up, color: Styles.white),
                 width: MediaQuery.of(context).size.width*0.8,
+                validator: (value) => _currencies.contains(Currency.create(_defaultCurrencyController.text.trim(), 2)) ? null : "Currency entered is not a valid currency! Use the drop down menu for convienience.",
               ),
               SizedBox(
                 width: MediaQuery.of(context).size.width*0.8,

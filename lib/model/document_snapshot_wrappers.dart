@@ -27,6 +27,6 @@ class Friendships {
 }
 
 class Trips {
-  final List<QueryDocumentSnapshot> documents;
-  Trips(this.documents);
+  final List<Map<String, dynamic>> trips;
+  Trips(this.trips);
 }
