@@ -30,3 +30,8 @@ class Trips {
   final List<Map<String, dynamic>> trips;
   Trips(this.trips);
 }
+
+class Expenses {
+  final List<Map<String, dynamic>> expenses;
+  Expenses(this.expenses);
+}

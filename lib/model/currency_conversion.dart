@@ -15,6 +15,10 @@ class CurrencyConversion {
     _instance = CurrencyConversion._();
   }
 
+  static CurrencyConversion? getInstanceOrNull() {
+    return _instance;
+  }
+
   static CurrencyConversion getInstance() {
     return _instance!;
   }
@@ -64,7 +68,7 @@ class CurrencyConversion {
   double convertToUSD(double amount, String originalCurrency) {
     if (originalCurrency == "USD") return amount;
     final rate = _exchangeRates[originalCurrency];
-    if (rate == null) return amount; // Failsafe in case rates could not be retrieved
+    if (rate == null) {debugPrint("Rate null"); return amount;} // Failsafe in case rates could not be retrieved
     return amount * (1/rate);
   }
 }

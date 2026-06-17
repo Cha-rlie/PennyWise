@@ -66,28 +66,31 @@ class _FriendsPageState extends State<FriendsPage> {
                   mainAxisSize: MainAxisSize.min,
                   spacing: 10,
                   children: [
-                    for (Map<String, dynamic> friend in _friends) Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(friend["friendName"] ?? "Unknown", style: Styles.textFont),
-                        // Change colour automatically based off if the debt is in the negative or not
-                        Builder(
-                          builder: (context) {
-                            final balanceUSD = (friend["balanceUSD"] as num? ?? 0).toDouble();
-                            return Text(
-                              Money.fromNum(
-                                CurrencyConversion.getInstance().convertFromUSD(balanceUSD, _userPreferredCurrency),
-                                isoCode: _userPreferredCurrency,
-                              ).toString(),
-                              style: Styles.textFont.copyWith(
-                                color: balanceUSD < 0 ? Styles.red : Styles.primaryColor,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            );
-                          },
-                        )
-                      ]
+                    for (Map<String, dynamic> friend in _friends) ListTile(
+                      contentPadding: EdgeInsetsDirectional.all(0),
+                      leading: Text(friend["friendName"] ?? "Unknown", style: Styles.textFont),
+                      // Change colour automatically based off if the debt is in the negative or not
+                      trailing:  Builder(
+                        builder: (context) {
+                          final balanceUSD = (friend["balanceUSD"] as num? ?? 0).toDouble();
+                          return Text(
+                            Money.fromNum(
+                              CurrencyConversion.getInstance().convertFromUSD(balanceUSD, _userPreferredCurrency),
+                              isoCode: _userPreferredCurrency,
+                            ).toString(),
+                            style: Styles.textFont.copyWith(
+                              color: balanceUSD < 0 ? Styles.negativeColor : Styles.primaryColor,
+                              fontWeight: FontWeight.bold,
+                            )
+                          );
+                        }
+                      ),
+                      onTap: () {
+                        Navigator.of(context).pushNamed(
+                          '/friendView',
+                          arguments: friend["friendId"]
+                        );
+                      },
                     )
                   ]
                 ),

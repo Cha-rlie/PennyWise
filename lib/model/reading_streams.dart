@@ -18,6 +18,10 @@ class ReadingStreams {
     _instance = ReadingStreams._(userId);
   }
 
+  static ReadingStreams? getInstanceOrNull() {
+    return _instance;
+  }
+
   static ReadingStreams getInstance() {
     return _instance!;
   }

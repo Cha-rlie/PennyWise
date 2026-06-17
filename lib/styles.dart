@@ -59,7 +59,7 @@ class Styles {
     labelStyle: headingFont,
     errorStyle: errorFont,
     helperStyle: textFont.copyWith(color: grey),
-    hintStyle: textFont,
+    hintStyle: textFont.copyWith(color: grey),
     filled: true,
     fillColor: lighterBackgroundColor,
     enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Styles.white, width: 3)),
@@ -92,6 +92,7 @@ class Styles {
 
     static InputDecoration plainTextFieldDecoration = InputDecoration(
       filled: false,
+      hintStyle: subTitleFont.copyWith(color: grey),
       errorStyle: errorFont,
       border: InputBorder.none
     );

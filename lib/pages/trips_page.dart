@@ -30,7 +30,7 @@ class _TripsPageState extends State<TripsPage> {
   final TextEditingController _tripDescriptionController = TextEditingController();
   final TextEditingController _defaultCurrencyController = TextEditingController();
   final TextEditingController _nameSearchController = TextEditingController();
-  List<String> _friendsSelected = [];
+  List<String> _selectedFriends = [];
 
   // Preload all currencies
   final List<Currency> _currencies = Currencies().getRegistered().toList();
@@ -85,7 +85,6 @@ class _TripsPageState extends State<TripsPage> {
                       children: [
                         Text(trip["tripName"] ?? "Unknown", style: Styles.textFont),
                         // Change colour automatically based off if the debt is in the negative or not
-                        // Change colour automatically based off if the debt is in the negative or not
                         Builder(
                           builder: (context) {
                             final balanceUSD = (trip["balanceUSD"] as num? ?? 0).toDouble();
@@ -95,7 +94,7 @@ class _TripsPageState extends State<TripsPage> {
                                 isoCode: _userPreferredCurrency,
                               ).toString(),
                               style: Styles.textFont.copyWith(
-                                color: balanceUSD < 0 ? Styles.red : Styles.primaryColor,
+                                color: balanceUSD < 0 ? Styles.negativeColor : Styles.primaryColor,
                                 fontWeight: FontWeight.bold,
                               ),
                             );
@@ -201,7 +200,7 @@ class _TripsPageState extends State<TripsPage> {
                                   Expanded(child:TextFormField(
                                     controller: _nameSearchController,
                                     style: Styles.textFont,
-                                    decoration: Styles.textFieldDecoration.copyWith(labelText: "Search username", hintText: "Search for friends to add by usernames"),
+                                    decoration: Styles.textFieldDecoration.copyWith(labelText: "Search username", helperText: "Search for friends to add by usernames"),
                                   )),
                                   SizedBox(width: 10),
                                   IconButton.filled(
@@ -214,7 +213,7 @@ class _TripsPageState extends State<TripsPage> {
                                 ]
                               ),
                               if (_friendSearchError.isNotEmpty) Text(_friendSearchError, style: Styles.errorFont),
-                              if (_friendsSelected.isNotEmpty) Container(
+                              if (_selectedFriends.isNotEmpty) Container(
                                 decoration: BoxDecoration(
                                   color: Styles.backgroundColor,
                                   border: Border.all(color: Styles.white, width: 1.5),
@@ -224,7 +223,7 @@ class _TripsPageState extends State<TripsPage> {
                                 child: Wrap(
                                   spacing: 8,
                                   runSpacing: 8,
-                                  children: _friendsSelected.map((friend) {
+                                  children: _selectedFriends.map((friend) {
                                     return Chip(
                                       label: Text(friend, style: Styles.textFont),
                                       deleteIcon: Icon(Icons.close, color: Styles.white),
@@ -232,8 +231,7 @@ class _TripsPageState extends State<TripsPage> {
                                       onDeleted: () {
                                         HapticFeedback.lightImpact();
                                         setState(() {
-                                          // Dispose of the controller before disposing to prevent memory leaks
-                                          _friendsSelected.remove(friend);
+                                          _selectedFriends.remove(friend);
                                         });
                                       },
                                     );
@@ -255,7 +253,13 @@ class _TripsPageState extends State<TripsPage> {
                                       side: BorderSide(color: Styles.red, width: 3),
                                       padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20)
                                     ),
-                                    onPressed: () => setState(() => _showMakeTripForm = false)
+                                    onPressed: () => setState(() {
+                                      _showMakeTripForm = false;
+                                      _tripNameController.text = "";
+                                      _nameSearchController.text = "";
+                                      _defaultCurrencyController.text = "";
+                                      _tripDescriptionController.text = "";
+                                    })
                                   ),
                                   SizedBox(width: 20),
                                   ElevatedButton.icon(
@@ -294,7 +298,7 @@ class _TripsPageState extends State<TripsPage> {
       return;
     }
     // Handle already selected to be in trip
-    if (_friendsSelected.contains(inputUsername)) {
+    if (_selectedFriends.contains(inputUsername)) {
       setState(() => _friendSearchError = "This user is already in the trip!");
       return;
     }
@@ -306,7 +310,7 @@ class _TripsPageState extends State<TripsPage> {
     }
     // Handle they are a friend valid to be added to the trip
     setState(() {
-      _friendsSelected.add(inputUsername);
+      _selectedFriends.add(inputUsername);
       _friendSearchError = "";
       // Reset the text in the search bar
       _nameSearchController.text = "";
@@ -320,7 +324,7 @@ class _TripsPageState extends State<TripsPage> {
       return;
     }
     // Handle insufficient friends selected
-    if (_friendsSelected.length < 2) {
+    if (_selectedFriends.length < 2) {
       setState(() => _tripFormError = "You need at least 2 friends to make a trip!");
       return;
     }
@@ -332,7 +336,7 @@ class _TripsPageState extends State<TripsPage> {
     // Process and generate information in advance
     final memberIds = [
       FirebaseAuth.instance.currentUser!.uid, // Include current user
-      ..._friendsSelected.map((friend) { // Include Ids from all the selected friends
+      ..._selectedFriends.map((friend) { // Include Ids from all the selected friends
         return _friends.firstWhere((friendFromStream) => friendFromStream["friendName"] == friend)["friendId"] as String;
       })
     ];
@@ -356,7 +360,9 @@ class _TripsPageState extends State<TripsPage> {
     // User is found and friending is successful
     if (!mounted) return;
     setState(() {
+      // Reset the form
       _friendSearchError = "";
+      _selectedFriends = [];
       _showMakeTripForm = false;
     });
     ScaffoldMessenger.of(context).showSnackBar(

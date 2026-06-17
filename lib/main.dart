@@ -12,6 +12,7 @@ import 'package:money2/money2.dart';
 import 'package:penny_wise/firebase_options.dart'; // Config file for Firebase
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:penny_wise/model/currency_conversion.dart';
+import 'package:penny_wise/pages/friend_view_page.dart';
 
 // Import community-made packages
 import 'package:provider/provider.dart';
@@ -73,8 +74,12 @@ class MyApp extends StatelessWidget {
                 },
               );
             }
-            ReadingStreams.initialize(user.uid);
-            CurrencyConversion.initialize();
+            if (ReadingStreams.getInstanceOrNull() == null || ReadingStreams.getInstance().userId != user.uid) {
+              ReadingStreams.initialize(user.uid);
+            }
+            if (CurrencyConversion.getInstanceOrNull() == null) {
+              CurrencyConversion.initialize();
+            }
             if (!isPostAuthDataComplete) {
               // While waiting for post-authentication data management
               return MaterialApp( // Uses Google's Material Design system
@@ -155,6 +160,36 @@ class MyApp extends StatelessWidget {
                       return Trips(trips);
                     }
                   )
+                ),
+                StreamProvider<Expenses?>(
+                  initialData: null,
+                  create: (context) => ReadingStreams.getInstance().expensesStream
+                    .asyncMap((snapshot) async {
+                      final expenses = await Future.wait(
+                        snapshot.docs.map((document) async {
+                          final data = document.data() as Map<String, dynamic>;
+
+                          return {
+                            "expenseId": document.id,
+                            "expenseName": data["name"],
+                            "amountUSD": data["amountUSD"],
+                            "originalAmount": data["originalAmount"],
+                            "description": data["description"],
+                            "date": data["date"],
+                            "isTripExpense": data["isTripExpense"],
+                            "tripId": data["tripId"],
+                            "friendshipsId": data["friendshipsId"] ,
+                            "participants": data["participants"] ,
+                            "expenseSplitStrategy": data["expenseSplitStrategy"],
+                            "amountPerPerson": data["amountPerPerson"],
+                            "paidBy": data["paidBy"],
+                            "createdAt": data["createdAt"],
+                          };
+                        }).toList()
+                      );
+                      return Expenses(expenses);
+                    }
+                  )
                 )
               ],
               child: MaterialApp( // Uses Google's Material Design system
@@ -167,6 +202,9 @@ class MyApp extends StatelessWidget {
                 routes: <String, WidgetBuilder>{
                   // Define named routes for navigation
                   '/profile': (context) => const ProfilePage(),
+                  '/friendView': (context) => const FriendViewPage(),
+                  //'/tripView': (context) => const TripViewPage(),
+                  //'/expenseView': (context) => ExpenseViewPage()
                 },
                 // Set the global navigator key for navigation outside of widget context
                 navigatorKey: navigatorKey,
